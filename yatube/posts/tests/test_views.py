@@ -15,13 +15,14 @@ GROUP_TITLE2 = 'Тестовая группа2'
 GROUP_SLUG2 = 'Test_group2'
 GROUP_DESCRIPTION2 = 'Описание группы'
 AUTHOR = 'TestUser'
+AUTHOR2 = 'SecondAuthor'
 POST_TEXT = 'Тестовый пост для тестов'
+POST_ID1 = 1
+POST_ID2 = 2
 POST_TEXT2 = 'Тестовый пост для тестов2'
-POST_ID = 1
 
 
 class PostViewsTests(TestCase):
-    """Тестируем view-функции"""
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -44,25 +45,28 @@ class PostViewsTests(TestCase):
         cls.post2 = Post.objects.create(
             author=cls.user,
             text=POST_TEXT2,
-            group=cls.group2
+            group=cls.group
         )
 
     def setUp(self):
-        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
-    def post_check(self, post):
-        """Проверка правильности заполнения поста"""
-        post_text = self.post.text
-        post_author = self.post.author.username
-        post_group_slug = self.post.group.slug
-        self.assertEqual(post_text, POST_TEXT)
-        self.assertEqual(post_author, AUTHOR)
-        self.assertEqual(post_group_slug, GROUP_SLUG)
+    def post_check(self, page_obj):
+        """Проверка правильности заполнения поста."""
+        self.assertEqual(self.post.pk, POST_ID1)
+        self.assertEqual(self.post.text, POST_TEXT)
+        self.assertEqual(self.post.author.username, AUTHOR)
+        self.assertEqual(self.post.group.slug, GROUP_SLUG)
+
+    def group_check(self, group_obj):
+        """Проверка правильности отображения информации о группе."""
+        self.assertEqual(self.group.title, GROUP_TITLE)
+        self.assertEqual(self.group.slug, GROUP_SLUG)
+        self.assertEqual(self.group.description, GROUP_DESCRIPTION)
 
     def test_pages_uses_correct_template(self):
-        """URL адрес использует правильный шаблон"""
+        """URL-адрес использует правильный шаблон."""
         templates_pages_names = {
             reverse('posts:index'): 'posts/index.html',
             reverse('posts:group_list',
@@ -89,7 +93,7 @@ class PostViewsTests(TestCase):
         """Шаблон index сформирован с правильным контекстом."""
         POSTS_ON_PAGE = 2
         response = self.authorized_client.get(reverse('posts:index'))
-        self.post_check(response.context)
+        self.post_check(response.context['page_obj'])
         self.assertEqual(len(response.context['page_obj'].object_list),
                          POSTS_ON_PAGE)
 
@@ -101,17 +105,15 @@ class PostViewsTests(TestCase):
                 kwargs={'slug': PostViewsTests.group.slug}
             )
         )
-        page_object = response.context['page_obj'][0]
-        group_object = page_object.group
-        self.assertEqual(page_object, self.post)
-        self.assertEqual(group_object, self.group)
+        self.post_check(response.context['page_obj'][0])
+        self.post_check(response.context['page_obj'][1])
+        self.group_check(response.context['group'])
 
     def test_post_detail_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
         response = self.authorized_client.get(
             reverse('posts:post_detail', kwargs={'post_id': self.post.pk}))
         self.post_check(response.context)
-        self.assertEqual(self.post.pk, POST_ID)
 
     def test_post_create_show_correct_context(self):
         """Шаблон post_create сформирован с правильным контекстом."""
@@ -142,19 +144,32 @@ class PostViewsTests(TestCase):
     def test_profile_show_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
         response = self.authorized_client.get(
-            reverse(
-                'posts:profile',
-                kwargs={'username': PostViewsTests.user.username}
-            )
+            reverse('posts:profile',
+                    kwargs={'username': PostViewsTests.user.username}
+                    )
         )
-        profile_context = response.context
-        test_profile = response.context['author']
-        self.post_check(profile_context)
-        self.assertEqual(test_profile, PostViewsTests.user)
+        self.post_check(response.context['page_obj'])
+        self.assertEqual(response.context['author'], PostViewsTests.user)
+
+    def test_group_posts_not_mixing(self):
+        """Посты не попадают в чужие группы."""
+        fakegroup = Group.objects.create(
+            title='title',
+            slug='fakeslug',
+            description='description',
+        )
+        response = self.authorized_client.get(reverse(
+            'posts:group_list', kwargs={'slug': fakegroup.slug}
+        ))
+        fakegroup_posts = response.context['page_obj']
+
+        self.assertNotIn(self.post, fakegroup_posts)
+        self.assertNotIn(self.post2, fakegroup_posts)
+
+        fakegroup.delete()
 
 
 class PostViewsPaginatorTests(TestCase):
-    """Тестируем паджинатор"""
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -188,7 +203,7 @@ class PostViewsPaginatorTests(TestCase):
         })
 
     def test_paginator(self):
-        """Проверяем паджинатор на index, profile и group_posts"""
+        """Проверяем паджинатор на index, profile и group_posts."""
         pages_for_test = [self.index, self.profile, self.group_list]
         posts_count = Post.objects.count()
         second_page_posts_count = posts_count - self.paginator_length

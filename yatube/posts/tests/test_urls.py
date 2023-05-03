@@ -27,7 +27,7 @@ class PostURLTests(TestCase):
                                         )
 
     def test_urls_uses_correct_template(self):
-        """Проверка корректности выбора шаблона"""
+        """Проверка корректности выбора шаблона."""
         templates_url_names = {
             '/': 'posts/index.html',
             f'/group/{PostURLTests.group.slug}/': 'posts/group_list.html',
@@ -42,7 +42,7 @@ class PostURLTests(TestCase):
                 self.assertTemplateUsed(response, template)
 
     def test_urls_uses_correct_access_guest(self):
-        """Доступность адреса неавторизованному юзеру"""
+        """Доступность адреса неавторизованному юзеру."""
         code_answer_for_users = {
             '/': HTTPStatus.OK,
             f'/group/{PostURLTests.group.slug}/': HTTPStatus.OK,
@@ -59,7 +59,7 @@ class PostURLTests(TestCase):
                 self.assertEqual(response.status_code, code)
 
     def test_urls_uses_correct_access_auth(self):
-        """Доступность адреса авторизованному юзеру"""
+        """Доступность адреса авторизованному юзеру."""
         code_answer_for_users = {
             '/': HTTPStatus.OK,
             f'/group/{PostURLTests.group.slug}/': HTTPStatus.OK,
@@ -76,7 +76,7 @@ class PostURLTests(TestCase):
                 self.assertEqual(response.status_code, code)
 
     def test_urls_uses_correct_access_auth_edit(self):
-        """Адрес редактирования доступен только автору"""
+        """Адрес редактирования доступен только автору."""
         code_answer_for_users = {
             '/': HTTPStatus.OK,
             f'/group/{PostURLTests.group.slug}/': HTTPStatus.OK,

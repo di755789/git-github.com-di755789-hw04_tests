@@ -45,7 +45,7 @@ class FormsTests(TestCase):
         self.authorized_client_author.force_login(self.author)
 
     def test_post_create_form(self):
-        """Валидная форма создает запись в Post"""
+        """Валидная форма создает запись в Post."""
         post_count = Post.objects.count()
         form_fields = {
             'text': self.POST_TEXT,
@@ -64,7 +64,7 @@ class FormsTests(TestCase):
         self.assertEqual(new_post.group.id, self.GROUP_ID)
 
     def test_post_edit_form(self):
-        """Валидная форма изменяет запись в Post"""
+        """Валидная форма изменяет запись в Post."""
         posts_count = Post.objects.count()
         form_data = {
             'text': self.POST_TEXT_AFTER_EDIT,
