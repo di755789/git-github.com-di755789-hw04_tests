@@ -8,44 +8,21 @@ from ..models import Group, Post
 
 User = get_user_model()
 
-GROUP_TITLE = 'Тестовая группа'
-GROUP_SLUG = 'Test_group'
-GROUP_DESCRIPTION = 'Описание группы'
-GROUP_TITLE2 = 'Тестовая группа2'
-GROUP_SLUG2 = 'Test_group2'
-GROUP_DESCRIPTION2 = 'Описание группы'
-AUTHOR = 'TestUser'
-AUTHOR2 = 'SecondAuthor'
-POST_TEXT = 'Тестовый пост для тестов'
-POST_ID1 = 1
-POST_ID2 = 2
-POST_TEXT2 = 'Тестовый пост для тестов2'
-
 
 class PostViewsTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username=AUTHOR)
+        cls.user = User.objects.create_user(username='TestUser')
         cls.group = Group.objects.create(
-            title=GROUP_TITLE,
-            slug=GROUP_SLUG,
-            description=GROUP_DESCRIPTION,
-        )
-        cls.group2 = Group.objects.create(
-            title=GROUP_TITLE2,
-            slug=GROUP_SLUG2,
-            description=GROUP_DESCRIPTION2,
+            title='Тестовая группа',
+            slug='Test_group',
+            description='Описание группы',
         )
         cls.post = Post.objects.create(
             author=cls.user,
-            text=POST_TEXT,
+            text='Тестовый пост для тестов',
             group=cls.group,
-        )
-        cls.post2 = Post.objects.create(
-            author=cls.user,
-            text=POST_TEXT2,
-            group=cls.group
         )
 
     def setUp(self):
@@ -54,16 +31,16 @@ class PostViewsTests(TestCase):
 
     def post_check(self, page_obj):
         """Проверка правильности заполнения поста."""
-        self.assertEqual(self.post.pk, POST_ID1)
-        self.assertEqual(self.post.text, POST_TEXT)
-        self.assertEqual(self.post.author.username, AUTHOR)
-        self.assertEqual(self.post.group.slug, GROUP_SLUG)
+        self.assertEqual(page_obj.pk, self.post.pk)
+        self.assertEqual(page_obj.text, self.post.text)
+        self.assertEqual(page_obj.author, self.post.author)
+        self.assertEqual(page_obj.group, self.group)
 
     def group_check(self, group_obj):
         """Проверка правильности отображения информации о группе."""
-        self.assertEqual(self.group.title, GROUP_TITLE)
-        self.assertEqual(self.group.slug, GROUP_SLUG)
-        self.assertEqual(self.group.description, GROUP_DESCRIPTION)
+        self.assertEqual(group_obj.title, self.group.title)
+        self.assertEqual(group_obj.slug, self.group.slug)
+        self.assertEqual(group_obj.description, self.group.description)
 
     def test_pages_uses_correct_template(self):
         """URL-адрес использует правильный шаблон."""
@@ -91,11 +68,9 @@ class PostViewsTests(TestCase):
 
     def test_index_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""
-        POSTS_ON_PAGE = 2
         response = self.authorized_client.get(reverse('posts:index'))
-        self.post_check(response.context['page_obj'])
-        self.assertEqual(len(response.context['page_obj'].object_list),
-                         POSTS_ON_PAGE)
+        self.post_check(response.context.get('post'))
+        self.assertEqual(len(response.context['page_obj'].object_list), 1)
 
     def test_group_posts_show_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
@@ -105,15 +80,14 @@ class PostViewsTests(TestCase):
                 kwargs={'slug': PostViewsTests.group.slug}
             )
         )
-        self.post_check(response.context['page_obj'][0])
-        self.post_check(response.context['page_obj'][1])
-        self.group_check(response.context['group'])
+        self.post_check(response.context.get('post'))
+        self.group_check(response.context.get('group'))
 
     def test_post_detail_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
         response = self.authorized_client.get(
             reverse('posts:post_detail', kwargs={'post_id': self.post.pk}))
-        self.post_check(response.context)
+        self.post_check(response.context.get('post'))
 
     def test_post_create_show_correct_context(self):
         """Шаблон post_create сформирован с правильным контекстом."""
@@ -148,7 +122,7 @@ class PostViewsTests(TestCase):
                     kwargs={'username': PostViewsTests.user.username}
                     )
         )
-        self.post_check(response.context['page_obj'])
+        self.post_check(response.context.get('post'))
         self.assertEqual(response.context['author'], PostViewsTests.user)
 
     def test_group_posts_not_mixing(self):
@@ -164,7 +138,6 @@ class PostViewsTests(TestCase):
         fakegroup_posts = response.context['page_obj']
 
         self.assertNotIn(self.post, fakegroup_posts)
-        self.assertNotIn(self.post2, fakegroup_posts)
 
         fakegroup.delete()
 
@@ -173,16 +146,16 @@ class PostViewsPaginatorTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username=AUTHOR)
+        cls.user = User.objects.create_user(username='TestUser')
         cls.group = Group.objects.create(
-            title=GROUP_TITLE,
-            slug=GROUP_SLUG,
-            description=GROUP_DESCRIPTION
+            title='Тестовая группа',
+            slug='Test_group',
+            description='Описание группы'
         )
         bulk_size = 13
         posts = [
             Post(
-                text=f'{POST_TEXT} {post_num}',
+                text=f'Тестовый пост для тестов {post_num}',
                 author=cls.user,
                 group=cls.group
             )
