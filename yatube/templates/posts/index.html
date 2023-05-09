@@ -4,13 +4,17 @@
   Последние обновления на сайте
 {% endblock %}
 {% block content %}
+{% load cache %}
 <h1>Последние обновления на сайте</h1>
+{% include 'posts/includes/switcher.html' %}
+{% cache 20 index_page %}
 {% for post in page_obj %}
   {% include 'includes/post_viewer.html' with show_author_link=True show_group_link=True %}
   {% if not forloop.last %}
     <hr>
   {% endif %}
 {% endfor %}
+{% endcache %}
 {% include 'posts/includes/paginator.html' %}   
 {% endblock %}
     

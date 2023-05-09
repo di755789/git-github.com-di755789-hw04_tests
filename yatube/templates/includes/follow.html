@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Cтраница пользователя {{ user.username }}{% endblock %}
+{% block content %}
+  <h1>Последние обновления от авторов</h1>
+  {% include 'posts/includes/switcher.html' %}
+  {% for post in page_obj %}
+    {% include 'includes/post_viewer.html' with show_author_link=True show_group_link=True %}     
+  {% endfor %}
+  {% include 'posts/includes/paginator.html' %}
+{% endblock %}
